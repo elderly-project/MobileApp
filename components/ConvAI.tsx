@@ -3,7 +3,8 @@
 import { useConversation } from '@11labs/react';
 import { Mic } from 'lucide-react-native';
 import { useCallback } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, AccessibilityInfo } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
 import tools from '../utils/tools';
 
@@ -31,21 +32,40 @@ export default function ConvAiDOMComponent({
   flash_screen: typeof tools.flash_screen;
 }) {
   const conversation = useConversation({
-    onConnect: () => console.log('Connected'),
-    onDisconnect: () => console.log('Disconnected'),
+    onConnect: () => {
+      console.log('Connected');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      AccessibilityInfo.announceForAccessibility('Voice assistant connected. You can start speaking.');
+    },
+    onDisconnect: () => {
+      console.log('Disconnected');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      AccessibilityInfo.announceForAccessibility('Voice assistant disconnected.');
+    },
     onMessage: (message) => {
       console.log(message);
+      // Announce AI responses for accessibility
+      AccessibilityInfo.announceForAccessibility(message.message);
     },
-    onError: (error) => console.error('Error:', error),
+    onError: (error) => {
+      console.error('Error:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      AccessibilityInfo.announceForAccessibility('An error occurred. Please try again.');
+    },
   });
+
   const startConversation = useCallback(async () => {
     try {
       // Request microphone permission
       const hasPermission = await requestMicrophonePermission();
       if (!hasPermission) {
-        alert('No permission');
+        AccessibilityInfo.announceForAccessibility('Microphone permission is needed to use voice features.');
+        alert('Microphone permission is needed to use voice features.');
         return;
       }
+
+      // Provide haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       // Start the conversation with your agent
       await conversation.startSession({
@@ -61,10 +81,12 @@ export default function ConvAiDOMComponent({
       });
     } catch (error) {
       console.error('Failed to start conversation:', error);
+      AccessibilityInfo.announceForAccessibility('Failed to start voice assistant. Please try again.');
     }
   }, [conversation]);
 
   const stopConversation = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await conversation.endSession();
   }, [conversation]);
 
@@ -72,6 +94,10 @@ export default function ConvAiDOMComponent({
     <Pressable
       style={[styles.callButton, conversation.status === 'connected' && styles.callButtonActive]}
       onPress={conversation.status === 'disconnected' ? startConversation : stopConversation}
+      accessible={true}
+      accessibilityLabel={conversation.status === 'connected' ? 'Stop voice assistant' : 'Start voice assistant'}
+      accessibilityHint="Double tap to toggle voice assistant"
+      accessibilityRole="button"
     >
       <View
         style={[
@@ -79,7 +105,7 @@ export default function ConvAiDOMComponent({
           conversation.status === 'connected' && styles.buttonInnerActive,
         ]}
       >
-        <Mic size={32} color="#E2E8F0" strokeWidth={1.5} style={styles.buttonIcon} />
+        <Mic size={40} color="#FFFFFF" strokeWidth={2} style={styles.buttonIcon} />
       </View>
     </Pressable>
   );
@@ -90,18 +116,26 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
+    shadowColor: '#3B82F6',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
   },
   callButtonActive: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
   },
   buttonInner: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     backgroundColor: '#3B82F6',
     alignItems: 'center',
     justifyContent: 'center',
@@ -112,7 +146,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.5,
     shadowRadius: 20,
-    elevation: 5,
+    elevation: 8,
   },
   buttonInnerActive: {
     backgroundColor: '#EF4444',
