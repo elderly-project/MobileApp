@@ -1,33 +1,26 @@
-import * as Battery from 'expo-battery';
-import * as Brightness from 'expo-brightness';
+// Mock tools for ElevenLabs integration
+// These are basic implementations for demo purposes
 
 const get_battery_level = async () => {
-  const batteryLevel = await Battery.getBatteryLevelAsync();
-  console.log('batteryLevel', batteryLevel);
-  if (batteryLevel === -1) {
-    return 'Error: Device does not support retrieving the battery level.';
-  }
-  return batteryLevel;
+  console.log('Mock: Getting battery level');
+  // In a real implementation, this would use a library like expo-battery
+  return { level: 0.85 }; // Return mock battery level of 85%
 };
 
-const change_brightness = ({ brightness }: { brightness: number }) => {
-  console.log('change_brightness', brightness);
-  Brightness.setSystemBrightnessAsync(brightness);
-  return brightness;
+const change_brightness = async (params: { level: number }) => {
+  console.log('Mock: Changing brightness to', params.level);
+  // In a real implementation, this would use a library like expo-brightness
+  return { success: true };
 };
 
-const flash_screen = () => {
-  Brightness.setSystemBrightnessAsync(1);
-  setTimeout(() => {
-    Brightness.setSystemBrightnessAsync(0);
-  }, 200);
-  return 'Successfully flashed the screen.';
+const flash_screen = async () => {
+  console.log('Mock: Flashing screen');
+  // In a real implementation, this might animate a view to flash
+  return { success: true };
 };
 
-const tools = {
+export default {
   get_battery_level,
   change_brightness,
   flash_screen,
 };
-
-export default tools;
