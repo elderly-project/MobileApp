@@ -4,10 +4,10 @@ import { supabase, getCurrentUser, getUserProfile, getUserMedications, getUserAp
 
 interface UserDataProps {
   onSignOut?: () => void;
-  show?: 'appointments' | 'medications';
+  show?: 'appointments' | 'medications' | 'profile';
 }
 
-export default function UserData({ onSignOut, show  }: UserDataProps) {
+export default function UserData({ onSignOut, show }: UserDataProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [userData, setUserData] = useState<{
@@ -108,15 +108,17 @@ export default function UserData({ onSignOut, show  }: UserDataProps) {
         <Text style={styles.welcomeText}>
           Welcome, {userData.profile?.full_name || 'User'}
         </Text>
-        {onSignOut && (
+        {show === 'profile' && onSignOut && (
           <TouchableOpacity onPress={onSignOut} style={styles.signOutButton}>
             <Text style={styles.signOutButtonText}>Sign Out</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {!show && (
+
+      {(!show || show == 'profile') && (
         <View style={styles.section}>
+          
           <Text style={styles.sectionTitle}>Profile Information</Text>
           <View style={styles.profileItem}>
             <Text style={styles.profileLabel}>Name:</Text>
@@ -255,6 +257,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1E40AF',
   },
+  backButton: {
+  padding: 6,
+  borderRadius: 6,
+  backgroundColor: '#3B82F6',
+  marginRight: 8,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
   signOutButton: {
     padding: 8,
     borderRadius: 8,
@@ -291,7 +303,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   profileLabel: {
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#3B82F6',
     width: 120,
   },

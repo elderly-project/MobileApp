@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 
 interface SimplestAppProps {
   onSignOut: () => void;
-  onViewUserData: (section: 'appointments' | 'medications') => void;
+  onViewUserData: (section: 'appointments' | 'medications' | 'profile') => void;
 }
 
 export default function SimplestApp({ onSignOut, onViewUserData }: SimplestAppProps) {
@@ -26,8 +26,8 @@ export default function SimplestApp({ onSignOut, onViewUserData }: SimplestAppPr
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>HealthCompanion AI</Text>
-        <TouchableOpacity onPress={onSignOut} style={styles.signOutButton}>
-          <Text style={styles.signOutButtonText}>Sign Out</Text>
+        <TouchableOpacity onPress={() => onViewUserData('profile')} style={styles.signOutButton}>
+          <Text style={styles.signOutButtonText}>Profile</Text>
         </TouchableOpacity>
       </View>
 

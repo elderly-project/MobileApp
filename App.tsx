@@ -12,7 +12,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showUserData, setShowUserData] = useState(false);
-  const [showSection, setShowSection] = useState<'appointments' | 'medications' | null>(null);
+  const [showSection, setShowSection] = useState<'appointments' | 'medications' | 'profile' | null>(null);
 
   useEffect(() => {
     // Check for existing session on app load
@@ -68,10 +68,11 @@ export default function App() {
     setShowUserData(false);
   };
 
-  const toggleUserData = (section: 'appointments' | 'medications') => {
-    setShowSection(section);
-    setShowUserData(true);
+  const handleViewUserData = (section: 'appointments' | 'medications' | 'profile') => {
+  setShowSection(section);
+  setShowUserData(true);
   };
+
 
 
   // If there's an error, display it
@@ -181,7 +182,7 @@ export default function App() {
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill} 
       />
-      <SimplestApp onSignOut={handleSignOut} onViewUserData={toggleUserData} />
+      <SimplestApp onSignOut={handleSignOut} onViewUserData={handleViewUserData} />
       <StatusBar style="dark" />
     </SafeAreaView>
   );
@@ -233,9 +234,11 @@ const styles = StyleSheet.create({
   },
   backButtonContainer: {
     position: 'absolute',
-    bottom: 20,
-    width: '100%',
+    bottom: 20, // fixed distance from bottom
+    left: 0,
+    right: 0,
     alignItems: 'center',
+    paddingHorizontal: 16, // optional padding for horizontal spacing
   },
   backButton: {
     backgroundColor: '#3B82F6',
@@ -246,5 +249,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
     overflow: 'hidden',
-  },
+},
 });
