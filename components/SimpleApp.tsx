@@ -40,20 +40,24 @@ export default function SimpleApp() {
         
         <TouchableOpacity 
           style={styles.button}
-          onPress={() => {
-            setStatus('Checking connection...');
-            supabase.from('user_profiles').select('count').limit(1).then(
-              ({data, error}) => {
-                if (error) {
-                  setStatus(`Database Error: ${error.message}`);
-                } else {
-                  setStatus(`Connected to database - ${new Date().toLocaleTimeString()}`);
-                }
+          onPress={async () => {
+            try {
+              setStatus('Checking connection...');
+              const { data, error } = await supabase
+                .from('user_profiles')
+                .select('count')
+                .limit(1);
+
+              if (error) {
+                setStatus(`Database Error: ${error.message}`);
+              } else {
+                setStatus(`Connected to database - ${new Date().toLocaleTimeString()}`);
               }
-            ).catch(e => {
+            } catch (e) {
               setStatus(`Error: ${e instanceof Error ? e.message : String(e)}`);
-            });
+            }
           }}
+
         >
           <Text style={styles.buttonText}>Test Database Connection</Text>
         </TouchableOpacity>
