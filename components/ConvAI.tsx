@@ -69,7 +69,7 @@ export default function ConvAiDOMComponent({
 
       // Start the conversation with your agent
       await conversation.startSession({
-        agentId: 'hqpWLEvqCLrZImUPdRFq',
+        agentId: 'agent_01jw21p1h0e4dsfnv17dxwrspw',
         dynamicVariables: {
           platform,
         },

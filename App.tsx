@@ -6,6 +6,9 @@ import SimplestApp from './SimplestApp';
 import Auth from './components/Auth';
 import UserData from './components/UserData';
 import { supabase } from './utils/supabase';
+import ConvAiDOMComponent from './components/ConvAI';
+import tools from './utils/tools';
+import { Platform } from 'react-native';
 
 export default function App() {
   const [session, setSession] = useState<boolean>(false);
@@ -107,6 +110,9 @@ export default function App() {
           >
             Retry
           </Text>
+          <View style={styles.domComponentContainer}>
+          
+        </View>
         </View>
         <StatusBar style="dark" />
       </SafeAreaView>
@@ -189,6 +195,17 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  domComponentContainer: {
+    width: 120,
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  domComponent: {
+    width: 120,
+    height: 120,
+  },
   container: {
     flex: 1,
   },

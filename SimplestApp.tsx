@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native
 import { Mic } from 'lucide-react-native';
 import FallbackButton from './components/FallbackButton';
 import { useNavigation } from '@react-navigation/native';
+import ConvAiDOMComponent from './components/ConvAI';
+import tools from './utils/tools';
+
 
 
 interface SimplestAppProps {
@@ -75,6 +78,13 @@ export default function SimplestApp({ onSignOut, onViewUserData }: SimplestAppPr
             <Text style={styles.helpExample}>"What's my schedule today?"</Text>
             <Text style={styles.helpExample}>"Remind me about my medicine"</Text>
           </View>
+          <ConvAiDOMComponent
+                      dom={{ style: styles.domComponent }}
+                      platform={Platform.OS}
+                      get_battery_level={tools.get_battery_level}
+                      change_brightness={tools.change_brightness}
+                      flash_screen={tools.flash_screen}
+                    />
         </View>
       </View>
     </View>
@@ -83,6 +93,17 @@ export default function SimplestApp({ onSignOut, onViewUserData }: SimplestAppPr
 
 
 const styles = StyleSheet.create({
+  domComponentContainer: {
+    width: 120,
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  domComponent: {
+    width: 120,
+    height: 120,
+  },
   container: {
     flex: 1,
     paddingTop: 100,
