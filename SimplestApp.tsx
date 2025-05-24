@@ -7,12 +7,13 @@ import { useNavigation } from '@react-navigation/native';
 
 interface SimplestAppProps {
   onSignOut: () => void;
-  onViewUserData: () => void;
+  onViewUserData: (section: 'appointments' | 'medications') => void;
 }
 
 export default function SimplestApp({ onSignOut, onViewUserData }: SimplestAppProps) {
   const [showVoiceInfo, setShowVoiceInfo] = useState(false);
   const isWeb = Platform.OS === 'web';
+
 
 
   const handleVoiceAssistant = () => {
@@ -33,14 +34,14 @@ export default function SimplestApp({ onSignOut, onViewUserData }: SimplestAppPr
       {/* Grid Layout */}
       <View style={styles.gridContainer}>
         <View style={styles.gridRow}>
-          <TouchableOpacity style={styles.gridButton} onPress={onViewUserData}>
+          <TouchableOpacity style={styles.gridButton} onPress={() => onViewUserData('appointments')}>
             <View style={styles.buttonContent}>
               <Text style={styles.gridIcon}>📅</Text>
               <Text style={styles.gridText}>Appointments</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.gridButton} onPress={onViewUserData}>
+          <TouchableOpacity style={styles.gridButton} onPress={() => onViewUserData('medications')}>
             <View style={styles.buttonContent}>
               <Text style={styles.gridIcon}>💊</Text>
               <Text style={styles.gridText}>Medications</Text>

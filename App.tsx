@@ -12,6 +12,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showUserData, setShowUserData] = useState(false);
+  const [showSection, setShowSection] = useState<'appointments' | 'medications' | null>(null);
 
   useEffect(() => {
     // Check for existing session on app load
@@ -67,9 +68,11 @@ export default function App() {
     setShowUserData(false);
   };
 
-  const toggleUserData = () => {
-    setShowUserData(!showUserData);
+  const toggleUserData = (section: 'appointments' | 'medications') => {
+    setShowSection(section);
+    setShowUserData(true);
   };
+
 
   // If there's an error, display it
   if (error) {
@@ -146,24 +149,28 @@ export default function App() {
 
   // If user wants to see their data
   if (showUserData) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <LinearGradient 
-          colors={['#EFF6FF', '#DBEAFE', '#F0F9FF']} 
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill} 
-        />
-        <UserData onSignOut={handleSignOut} />
-        <View style={styles.backButtonContainer}>
-          <TouchableOpacity onPress={toggleUserData}>
-            <Text style={styles.backButton}>Back to Home</Text>
-          </TouchableOpacity>
-        </View>
-        <StatusBar style="dark" />
-      </SafeAreaView>
-    );
-  }
+  return (
+    <SafeAreaView style={styles.container}>
+      <LinearGradient 
+        colors={['#EFF6FF', '#DBEAFE', '#F0F9FF']} 
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill} 
+      />
+      <UserData onSignOut={handleSignOut} show={showSection ?? undefined} />
+      <View style={styles.backButtonContainer}>
+        <TouchableOpacity onPress={() => {
+          setShowUserData(false);
+          setShowSection(null);
+        }}>
+          <Text style={styles.backButton}>Back to Home</Text>
+        </TouchableOpacity>
+      </View>
+      <StatusBar style="dark" />
+    </SafeAreaView>
+  );
+}
+
 
   // If authenticated, show the main app
   return (

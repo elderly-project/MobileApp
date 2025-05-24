@@ -3,10 +3,11 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity
 import { supabase, getCurrentUser, getUserProfile, getUserMedications, getUserAppointments } from '../utils/supabase';
 
 interface UserDataProps {
-  onSignOut: () => void;
+  onSignOut?: () => void;
+  show?: 'appointments' | 'medications';
 }
 
-export default function UserData({ onSignOut }: UserDataProps) {
+export default function UserData({ onSignOut, show  }: UserDataProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [userData, setUserData] = useState<{
@@ -61,7 +62,7 @@ export default function UserData({ onSignOut }: UserDataProps) {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      onSignOut();
+      onSignOut?.();
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -107,112 +108,119 @@ export default function UserData({ onSignOut }: UserDataProps) {
         <Text style={styles.welcomeText}>
           Welcome, {userData.profile?.full_name || 'User'}
         </Text>
-        <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton}>
-          <Text style={styles.signOutButtonText}>Sign Out</Text>
-        </TouchableOpacity>
+        {onSignOut && (
+          <TouchableOpacity onPress={onSignOut} style={styles.signOutButton}>
+            <Text style={styles.signOutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* User Profile */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Profile Information</Text>
-        <View style={styles.profileItem}>
-          <Text style={styles.profileLabel}>Name:</Text>
-          <Text style={styles.profileValue}>{userData.profile?.full_name || 'Not specified'}</Text>
+      {!show && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Profile Information</Text>
+          <View style={styles.profileItem}>
+            <Text style={styles.profileLabel}>Name:</Text>
+            <Text style={styles.profileValue}>{userData.profile?.full_name || 'Not specified'}</Text>
+          </View>
+          {userData.profile?.date_of_birth && (
+            <View style={styles.profileItem}>
+              <Text style={styles.profileLabel}>Date of Birth:</Text>
+              <Text style={styles.profileValue}>{formatDate(userData.profile.date_of_birth)}</Text>
+            </View>
+          )}
+          {userData.profile?.phone_number && (
+            <View style={styles.profileItem}>
+              <Text style={styles.profileLabel}>Phone:</Text>
+              <Text style={styles.profileValue}>{userData.profile.phone_number}</Text>
+            </View>
+          )}
+          {userData.profile?.medical_conditions?.length > 0 && (
+            <View style={styles.profileItem}>
+              <Text style={styles.profileLabel}>Medical Conditions:</Text>
+              <View>
+                {userData.profile.medical_conditions.map((condition: string, index: number) => (
+                  <Text key={index} style={styles.listItem}>• {condition}</Text>
+                ))}
+              </View>
+            </View>
+          )}
+          {userData.profile?.allergies?.length > 0 && (
+            <View style={styles.profileItem}>
+              <Text style={styles.profileLabel}>Allergies:</Text>
+              <View>
+                {userData.profile.allergies.map((allergy: string, index: number) => (
+                  <Text key={index} style={styles.listItem}>• {allergy}</Text>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
-        {userData.profile?.date_of_birth && (
-          <View style={styles.profileItem}>
-            <Text style={styles.profileLabel}>Date of Birth:</Text>
-            <Text style={styles.profileValue}>{formatDate(userData.profile.date_of_birth)}</Text>
-          </View>
-        )}
-        {userData.profile?.phone_number && (
-          <View style={styles.profileItem}>
-            <Text style={styles.profileLabel}>Phone:</Text>
-            <Text style={styles.profileValue}>{userData.profile.phone_number}</Text>
-          </View>
-        )}
-        {userData.profile?.medical_conditions && userData.profile.medical_conditions.length > 0 && (
-          <View style={styles.profileItem}>
-            <Text style={styles.profileLabel}>Medical Conditions:</Text>
-            <View>
-              {userData.profile.medical_conditions.map((condition: string, index: number) => (
-                <Text key={index} style={styles.listItem}>• {condition}</Text>
-              ))}
-            </View>
-          </View>
-        )}
-        {userData.profile?.allergies && userData.profile.allergies.length > 0 && (
-          <View style={styles.profileItem}>
-            <Text style={styles.profileLabel}>Allergies:</Text>
-            <View>
-              {userData.profile.allergies.map((allergy: string, index: number) => (
-                <Text key={index} style={styles.listItem}>• {allergy}</Text>
-              ))}
-            </View>
-          </View>
-        )}
-      </View>
+      )}
 
-      {/* Medications */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Medications</Text>
-        {userData.medications.length === 0 ? (
-          <Text style={styles.emptyMessage}>No medications found.</Text>
-        ) : (
-          userData.medications.map((medication) => (
-            <View key={medication.id} style={styles.card}>
-              <Text style={styles.cardTitle}>{medication.name}</Text>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardDetail}>Dosage: {medication.dosage}</Text>
-                <Text style={styles.cardDetail}>Frequency: {medication.frequency}</Text>
-                {medication.start_date && (
-                  <Text style={styles.cardDetail}>Start Date: {formatDate(medication.start_date)}</Text>
-                )}
-                {medication.end_date && (
-                  <Text style={styles.cardDetail}>End Date: {formatDate(medication.end_date)}</Text>
-                )}
-                {medication.prescribing_doctor && (
-                  <Text style={styles.cardDetail}>Doctor: {medication.prescribing_doctor}</Text>
-                )}
-                {medication.notes && (
-                  <Text style={styles.cardDetail}>Notes: {medication.notes}</Text>
-                )}
-              </View>
-            </View>
-          ))
-        )}
-      </View>
 
-      {/* Appointments */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Upcoming Appointments</Text>
-        {userData.appointments.length === 0 ? (
-          <Text style={styles.emptyMessage}>No appointments scheduled.</Text>
-        ) : (
-          userData.appointments.map((appointment) => (
-            <View key={appointment.id} style={styles.card}>
-              <Text style={styles.cardTitle}>{appointment.title}</Text>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardDetail}>
-                  Date: {formatDate(appointment.appointment_date)}
-                </Text>
-                <Text style={styles.cardDetail}>
-                  Time: {formatTime(appointment.appointment_date)}
-                </Text>
-                {appointment.doctor_name && (
-                  <Text style={styles.cardDetail}>Doctor: {appointment.doctor_name}</Text>
-                )}
-                {appointment.location && (
-                  <Text style={styles.cardDetail}>Location: {appointment.location}</Text>
-                )}
-                {appointment.notes && (
-                  <Text style={styles.cardDetail}>Notes: {appointment.notes}</Text>
-                )}
+      {(!show || show === 'medications') && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Medications</Text>
+          {userData.medications.length === 0 ? (
+            <Text style={styles.emptyMessage}>No medications found.</Text>
+          ) : (
+            userData.medications.map((medication) => (
+              <View key={medication.id} style={styles.card}>
+                <Text style={styles.cardTitle}>{medication.name}</Text>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardDetail}>Dosage: {medication.dosage}</Text>
+                  <Text style={styles.cardDetail}>Frequency: {medication.frequency}</Text>
+                  {medication.start_date && (
+                    <Text style={styles.cardDetail}>Start Date: {formatDate(medication.start_date)}</Text>
+                  )}
+                  {medication.end_date && (
+                    <Text style={styles.cardDetail}>End Date: {formatDate(medication.end_date)}</Text>
+                  )}
+                  {medication.prescribing_doctor && (
+                    <Text style={styles.cardDetail}>Doctor: {medication.prescribing_doctor}</Text>
+                  )}
+                  {medication.notes && (
+                    <Text style={styles.cardDetail}>Notes: {medication.notes}</Text>
+                  )}
+                </View>
               </View>
-            </View>
-          ))
-        )}
-      </View>
+            ))
+          )}
+        </View>
+      )}
+
+      {(!show || show === 'appointments') && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Upcoming Appointments</Text>
+          {userData.appointments.length === 0 ? (
+            <Text style={styles.emptyMessage}>No appointments scheduled.</Text>
+          ) : (
+            userData.appointments.map((appointment) => (
+              <View key={appointment.id} style={styles.card}>
+                <Text style={styles.cardTitle}>{appointment.title}</Text>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardDetail}>
+                    Date: {formatDate(appointment.appointment_date)}
+                  </Text>
+                  <Text style={styles.cardDetail}>
+                    Time: {formatTime(appointment.appointment_date)}
+                  </Text>
+                  {appointment.doctor_name && (
+                    <Text style={styles.cardDetail}>Doctor: {appointment.doctor_name}</Text>
+                  )}
+                  {appointment.location && (
+                    <Text style={styles.cardDetail}>Location: {appointment.location}</Text>
+                  )}
+                  {appointment.notes && (
+                    <Text style={styles.cardDetail}>Notes: {appointment.notes}</Text>
+                  )}
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+      )}
+
     </ScrollView>
   );
 }
