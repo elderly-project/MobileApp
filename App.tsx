@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, SafeAreaView, View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
+import { ArrowLeft } from 'lucide-react-native';
 import SimplestApp from './SimplestApp';
 import Auth from './components/Auth';
 import UserData from './components/UserData';
-import { supabase } from './utils/supabase';
+import { supabase, getCurrentUser, getUserProfile, getUserMedications, getUserAppointments } from './utils/supabase';
 import ConvAiDOMComponent from './components/ConvAI';
 import tools from './utils/tools';
 import { Platform } from 'react-native';
@@ -27,14 +28,19 @@ export default function App() {
         if (sessionError) {
           console.error("Session error:", sessionError);
           setError("Failed to get session: " + sessionError.message);
-        } else {
-          console.log("Session data:", data);
-          setSession(!!data.session);
+          setLoading(false);
+          return;
         }
+
+        console.log("Session data:", data);
+        const hasSession = !!data.session;
+        setSession(hasSession);
+        
       } catch (error) {
         console.error('Error checking session:', error);
         setError("Exception checking session: " + (error instanceof Error ? error.message : String(error)));
       } finally {
+        console.log("Setting loading to false");
         setLoading(false);
       }
     };
@@ -44,9 +50,10 @@ export default function App() {
     // Set up auth state change listener
     try {
       const { data } = supabase.auth.onAuthStateChange(
-        (_event, session) => {
+        async (_event, session) => {
           console.log("Auth state changed:", _event, session ? "Has session" : "No session");
-          setSession(!!session);
+          const hasSession = !!session;
+          setSession(hasSession);
         }
       );
 
@@ -57,10 +64,11 @@ export default function App() {
     } catch (error) {
       console.error("Error setting up auth listener:", error);
       setError("Failed to set up auth listener: " + (error instanceof Error ? error.message : String(error)));
+      setLoading(false);
     }
   }, []);
 
-  const handleAuthenticated = () => {
+  const handleAuthenticated = async () => {
     console.log("User authenticated");
     setSession(true);
   };
@@ -72,11 +80,9 @@ export default function App() {
   };
 
   const handleViewUserData = (section: 'appointments' | 'medications' | 'profile') => {
-  setShowSection(section);
-  setShowUserData(true);
+    setShowSection(section);
+    setShowUserData(true);
   };
-
-
 
   // If there's an error, display it
   if (error) {
@@ -164,14 +170,25 @@ export default function App() {
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill} 
       />
-      <UserData onSignOut={handleSignOut} show={showSection ?? undefined} />
-      <View style={styles.backButtonContainer}>
-        <TouchableOpacity onPress={() => {
-          setShowUserData(false);
-          setShowSection(null);
-        }}>
-          <Text style={styles.backButton}>Back to Home</Text>
+      <View style={styles.userDataHeader}>
+        <TouchableOpacity 
+          style={styles.topBackButton}
+          onPress={() => {
+            setShowUserData(false);
+            setShowSection(null);
+          }}
+        >
+          <ArrowLeft size={24} color="#1E40AF" />
         </TouchableOpacity>
+        <Text style={styles.userDataTitle}>
+          {showSection === 'profile' ? 'Profile' : 
+           showSection === 'medications' ? 'Medications' : 
+           showSection === 'appointments' ? 'Appointments' : 'Health Data'}
+        </Text>
+        <View style={styles.headerPlaceholder} />
+      </View>
+      <View style={styles.userDataContent}>
+        <UserData onSignOut={handleSignOut} show={showSection ?? undefined} />
       </View>
       <StatusBar style="dark" />
     </SafeAreaView>
@@ -249,6 +266,30 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
   },
+  userDataHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#DBEAFE',
+    borderBottomWidth: 1,
+    borderBottomColor: '#BFDBFE',
+  },
+  topBackButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  userDataTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1E40AF',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerPlaceholder: {
+    width: 40, // Same width as back button to center the title
+  },
   backButtonContainer: {
     position: 'absolute',
     bottom: 20, // fixed distance from bottom
@@ -266,5 +307,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
     overflow: 'hidden',
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backIcon: {
+    marginRight: 8,
+  },
+  backButtonText: {
+    color: 'white',
+  },
+  userDataContent: {
+    flex: 1,
+  },
 });

@@ -1,12 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { Mic } from 'lucide-react-native';
-import FallbackButton from './components/FallbackButton';
-import { useNavigation } from '@react-navigation/native';
 import ConvAiDOMComponent from './components/ConvAI';
 import tools from './utils/tools';
-
-
 
 interface SimplestAppProps {
   onSignOut: () => void;
@@ -14,15 +9,7 @@ interface SimplestAppProps {
 }
 
 export default function SimplestApp({ onSignOut, onViewUserData }: SimplestAppProps) {
-  const [showVoiceInfo, setShowVoiceInfo] = useState(false);
   const isWeb = Platform.OS === 'web';
-
-
-
-  const handleVoiceAssistant = () => {
-    setShowVoiceInfo(true);
-    setTimeout(() => setShowVoiceInfo(false), 3000);
-  };
 
   return (
     <View style={styles.container}>
@@ -54,43 +41,27 @@ export default function SimplestApp({ onSignOut, onViewUserData }: SimplestAppPr
         </View>
 
         {/* Voice Assistant Section (full width) */}
-          <View style={styles.assistantContainer}>
+        <View style={styles.assistantContainer}>
           <Text style={styles.assistantTitle}>Voice Assistant</Text>
-          
-          {showVoiceInfo && (
-            <View style={styles.infoBox}>
-              <Text style={styles.infoText}>
-                Voice assistant functionality is available in the mobile app or in compatible browsers.
-              </Text>
-            </View>
-          )}
-          
-          <View style={styles.buttonContainer}>
-            <FallbackButton 
-              onPress={handleVoiceAssistant}
-              title="Voice Assistant" 
-              subtitle={isWeb ? "Web Version" : "Tap to Start"}
-            />
-          </View>
           
           <View style={styles.helpTextContainer}>
             <Text style={styles.helpText}>Try saying:</Text>
             <Text style={styles.helpExample}>"What's my schedule today?"</Text>
             <Text style={styles.helpExample}>"Remind me about my medicine"</Text>
           </View>
+          
           <ConvAiDOMComponent
-                      dom={{ style: styles.domComponent }}
-                      platform={Platform.OS}
-                      get_battery_level={tools.get_battery_level}
-                      change_brightness={tools.change_brightness}
-                      flash_screen={tools.flash_screen}
-                    />
+            dom={{ style: styles.domComponent }}
+            platform={Platform.OS}
+            get_battery_level={tools.get_battery_level}
+            change_brightness={tools.change_brightness}
+            flash_screen={tools.flash_screen}
+          />
         </View>
       </View>
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   domComponentContainer: {
@@ -143,18 +114,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 20,
   },
-  voiceAssistant: {
-    marginTop: 20,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-    alignItems: 'center',
-  },
   assistantContainer: {
     backgroundColor: 'white',
     borderRadius: 10,
@@ -167,24 +126,11 @@ const styles = StyleSheet.create({
     elevation: 5,
     alignItems: 'center',
   },
-  buttonContainer: {
-    marginBottom: 16,
-  },
   assistantTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1E40AF',
     marginBottom: 16,
-  },
-  voiceButton: {
-    marginBottom: 16,
-    backgroundColor: '#3B82F6',
-    borderRadius: 40,
-    padding: 20,
-  },
-  voiceMic: {
-    fontSize: 32,
-    color: 'white',
   },
   helpTextContainer: {
     alignItems: 'center',
@@ -192,6 +138,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     width: '100%',
+    marginBottom: 16,
   },
   helpText: {
     fontSize: 14,
@@ -205,44 +152,31 @@ const styles = StyleSheet.create({
     marginBottom: 3,
     fontStyle: 'italic',
   },
-  infoBox: {
-    backgroundColor: '#FEF3C7',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 16,
-    width: '100%',
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#92400E',
-    textAlign: 'center',
-  },
   gridButton: {
-  flex: 1,
-  height: 100,
-  backgroundColor: '#3B82F6',
-  borderRadius: 12,
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginHorizontal: 5,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 8,
-  elevation: 5,
-},
-buttonContent: {
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-gridIcon: {
-  fontSize: 32, // larger icon
-  marginBottom: 6,
-},
-gridText: {
-  color: 'white',
-  fontSize: 16,
-  fontWeight: 'bold',
-},
-
+    flex: 1,
+    height: 100,
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  buttonContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gridIcon: {
+    fontSize: 32,
+    marginBottom: 6,
+  },
+  gridText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });

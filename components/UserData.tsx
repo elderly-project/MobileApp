@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { supabase, getCurrentUser, getUserProfile, getUserMedications, getUserAppointments } from '../utils/supabase';
+import AddAppointment from './AddAppointment';
+import PrescriptionUpload from './PrescriptionUpload';
+import EditProfile from './EditProfile';
 
 interface UserDataProps {
   onSignOut?: () => void;
@@ -10,6 +13,9 @@ interface UserDataProps {
 export default function UserData({ onSignOut, show }: UserDataProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showAddAppointment, setShowAddAppointment] = useState(false);
+  const [showPrescriptionUpload, setShowPrescriptionUpload] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
   const [userData, setUserData] = useState<{
     profile: any;
     medications: any[];
@@ -68,6 +74,33 @@ export default function UserData({ onSignOut, show }: UserDataProps) {
     }
   };
 
+  const handleAppointmentAdded = async () => {
+    setShowAddAppointment(false);
+    await loadUserData(); // Refresh the data to show the new appointment
+  };
+
+  const handleCancelAddAppointment = () => {
+    setShowAddAppointment(false);
+  };
+
+  const handlePrescriptionUploadComplete = async () => {
+    setShowPrescriptionUpload(false);
+    await loadUserData(); // Refresh the data to show any new documents
+  };
+
+  const handleCancelPrescriptionUpload = () => {
+    setShowPrescriptionUpload(false);
+  };
+
+  const handleProfileUpdated = async () => {
+    setShowEditProfile(false);
+    await loadUserData(); // Refresh the data to show the updated profile
+  };
+
+  const handleCancelEditProfile = () => {
+    setShowEditProfile(false);
+  };
+
   useEffect(() => {
     loadUserData();
   }, []);
@@ -92,6 +125,43 @@ export default function UserData({ onSignOut, show }: UserDataProps) {
     if (!dateString) return '';
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+
+  // If showing add appointment form
+  if (showAddAppointment) {
+    console.log('Rendering AddAppointment component');
+    return (
+      <AddAppointment 
+        onAppointmentAdded={handleAppointmentAdded}
+        onCancel={handleCancelAddAppointment}
+      />
+    );
+  }
+
+  // If showing prescription upload
+  if (showPrescriptionUpload) {
+    console.log('Rendering PrescriptionUpload component');
+    return (
+      <PrescriptionUpload 
+        onUploadComplete={handlePrescriptionUploadComplete}
+        onCancel={handleCancelPrescriptionUpload}
+        medications={userData.medications}
+      />
+    );
+  }
+
+  // If showing edit profile form
+  if (showEditProfile) {
+    console.log('Rendering EditProfile component');
+    return (
+      <EditProfile 
+        onProfileUpdated={handleProfileUpdated}
+        onCancel={handleCancelEditProfile}
+        currentProfile={userData.profile}
+      />
+    );
+  }
+
+  console.log('Rendering UserData component, showAddAppointment:', showAddAppointment);
 
   return (
     <ScrollView 
@@ -118,8 +188,18 @@ export default function UserData({ onSignOut, show }: UserDataProps) {
 
       {(!show || show == 'profile') && (
         <View style={styles.section}>
-          
-          <Text style={styles.sectionTitle}>Profile Information</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Profile Information</Text>
+            <TouchableOpacity 
+              style={styles.editButton}
+              onPress={() => {
+                console.log('Edit Profile button pressed!');
+                setShowEditProfile(true);
+              }}
+            >
+              <Text style={styles.editButtonText}>✏️ Edit</Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.profileItem}>
             <Text style={styles.profileLabel}>Name:</Text>
             <Text style={styles.profileValue}>{userData.profile?.full_name || 'Not specified'}</Text>
@@ -134,6 +214,18 @@ export default function UserData({ onSignOut, show }: UserDataProps) {
             <View style={styles.profileItem}>
               <Text style={styles.profileLabel}>Phone:</Text>
               <Text style={styles.profileValue}>{userData.profile.phone_number}</Text>
+            </View>
+          )}
+          {userData.profile?.emergency_contact && (
+            <View style={styles.profileItem}>
+              <Text style={styles.profileLabel}>Emergency Contact:</Text>
+              <Text style={styles.profileValue}>{userData.profile.emergency_contact}</Text>
+            </View>
+          )}
+          {userData.profile?.emergency_contact_phone && (
+            <View style={styles.profileItem}>
+              <Text style={styles.profileLabel}>Emergency Phone:</Text>
+              <Text style={styles.profileValue}>{userData.profile.emergency_contact_phone}</Text>
             </View>
           )}
           {userData.profile?.medical_conditions?.length > 0 && (
@@ -162,7 +254,18 @@ export default function UserData({ onSignOut, show }: UserDataProps) {
 
       {(!show || show === 'medications') && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Medications</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Medications</Text>
+            <TouchableOpacity 
+              style={styles.addButton}
+              onPress={() => {
+                console.log('Upload Prescription button pressed!');
+                setShowPrescriptionUpload(true);
+              }}
+            >
+              <Text style={styles.addButtonText}>📷 Upload Prescription</Text>
+            </TouchableOpacity>
+          </View>
           {userData.medications.length === 0 ? (
             <Text style={styles.emptyMessage}>No medications found.</Text>
           ) : (
@@ -193,7 +296,18 @@ export default function UserData({ onSignOut, show }: UserDataProps) {
 
       {(!show || show === 'appointments') && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Upcoming Appointments</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Upcoming Appointments</Text>
+            <TouchableOpacity 
+              style={styles.addButton}
+              onPress={() => {
+                console.log('Schedule button pressed!');
+                setShowAddAppointment(true);
+              }}
+            >
+              <Text style={styles.addButtonText}>+ Schedule</Text>
+            </TouchableOpacity>
+          </View>
           {userData.appointments.length === 0 ? (
             <Text style={styles.emptyMessage}>No appointments scheduled.</Text>
           ) : (
@@ -295,6 +409,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1E40AF',
+    marginBottom: 0,
+  },
+  sectionTitleWithMargin: {
     marginBottom: 12,
   },
   profileItem: {
@@ -342,5 +459,39 @@ const styles = StyleSheet.create({
   listItem: {
     color: '#1F2937',
     marginBottom: 4,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  addButton: {
+    padding: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#3B82F6',
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  editButton: {
+    padding: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#3B82F6',
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 }); 
