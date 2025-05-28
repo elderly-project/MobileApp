@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, Image, ScrollView, TextInput } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { ArrowLeft, Camera as CameraIcon, Upload, X, ChevronDown } from 'lucide-react-native';
+import { ArrowLeft, Camera as CameraIcon, Upload, X, ChevronDown, Brain, Check } from 'lucide-react-native';
 import { supabase, getCurrentUser } from '../utils/supabase';
 
 interface PrescriptionUploadProps {
@@ -11,18 +11,184 @@ interface PrescriptionUploadProps {
   medications: any[];
 }
 
+interface ExtractedMedication {
+  name: string;
+  dosage: string;
+  frequency: string;
+  prescribing_doctor: string;
+  notes: string;
+}
+
 export default function PrescriptionUpload({ onUploadComplete, onCancel, medications }: PrescriptionUploadProps) {
   const [showCamera, setShowCamera] = useState(false);
   const [showMedicationPicker, setShowMedicationPicker] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedMedication, setSelectedMedication] = useState('');
+  const [extractedMedications, setExtractedMedications] = useState<ExtractedMedication[]>([]);
+  const [showExtractedMeds, setShowExtractedMeds] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
 
   // Debug medications
   console.log('PrescriptionUpload medications:', medications);
   console.log('Medications length:', medications?.length || 0);
+
+  // Analyze prescription with ElevenLabs
+  const analyzePrescription = async () => {
+    if (!capturedImage) {
+      Alert.alert('Error', 'Please take a photo first');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      // Convert image to base64
+      const response = await fetch(capturedImage);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      
+      reader.onloadend = async () => {
+        const base64data = reader.result as string;
+        const base64Image = base64data.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+        
+        try {
+          // Call ElevenLabs API to analyze the prescription
+          const analysisResponse = await fetch('https://api.elevenlabs.io/v1/convai/conversation', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'xi-api-key': process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || '',
+            },
+            body: JSON.stringify({
+              agent_id: process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID || '',
+              text: `Please analyze this prescription image and extract the following information for each medication:
+              - Medication name
+              - Dosage (amount and unit)
+              - Frequency (how often to take)
+              - Prescribing doctor name
+              - Any special instructions or notes
+              
+              Please respond in JSON format like this:
+              {
+                "medications": [
+                  {
+                    "name": "medication name",
+                    "dosage": "dosage amount",
+                    "frequency": "frequency description",
+                    "prescribing_doctor": "doctor name",
+                    "notes": "any special instructions"
+                  }
+                ]
+              }`,
+              image: base64Image
+            })
+          });
+
+          if (!analysisResponse.ok) {
+            throw new Error('Failed to analyze prescription');
+          }
+
+          const analysisResult = await analysisResponse.json();
+          
+          // Parse the AI response to extract medication information
+          let extractedData: ExtractedMedication[] = [];
+          
+          try {
+            // Try to parse JSON response from AI
+            const parsedResponse = JSON.parse(analysisResult.response || analysisResult.text || '{}');
+            if (parsedResponse.medications && Array.isArray(parsedResponse.medications)) {
+              extractedData = parsedResponse.medications;
+            }
+          } catch (parseError) {
+            // If JSON parsing fails, try to extract information from text response
+            console.log('JSON parsing failed, trying text extraction');
+            // This is a fallback - you might want to implement more sophisticated text parsing
+            extractedData = [{
+              name: 'Extracted medication',
+              dosage: 'Please verify dosage',
+              frequency: 'Please verify frequency',
+              prescribing_doctor: 'Please verify doctor',
+              notes: analysisResult.response || analysisResult.text || 'Please review and edit'
+            }];
+          }
+
+          setExtractedMedications(extractedData);
+          setShowExtractedMeds(true);
+          
+        } catch (error) {
+          console.error('Error analyzing prescription:', error);
+          Alert.alert('Error', 'Failed to analyze prescription. Please try again or enter information manually.');
+        }
+      };
+      
+      reader.readAsDataURL(blob);
+      
+    } catch (error) {
+      console.error('Error preparing image for analysis:', error);
+      Alert.alert('Error', 'Failed to prepare image for analysis.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Save extracted medications to database
+  const saveExtractedMedications = async () => {
+    if (extractedMedications.length === 0) {
+      Alert.alert('Error', 'No medications to save');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const user = await getCurrentUser();
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+
+      // Save each extracted medication
+      for (const med of extractedMedications) {
+        if (med.name.trim()) {
+          const { error } = await supabase.from('medications').insert({
+            user_id: user.id,
+            name: med.name,
+            dosage: med.dosage,
+            frequency: med.frequency,
+            prescribing_doctor: med.prescribing_doctor || null,
+            notes: med.notes || null,
+            start_date: new Date().toISOString().split('T')[0] // Today's date
+          });
+
+          if (error) {
+            console.error('Error saving medication:', error);
+            throw error;
+          }
+        }
+      }
+
+      // Also upload the prescription image
+      await uploadPrescriptionImage();
+      
+      Alert.alert('Success', `${extractedMedications.length} medication(s) added successfully!`);
+      onUploadComplete();
+      
+    } catch (error) {
+      console.error('Error saving medications:', error);
+      Alert.alert('Error', 'Failed to save medications. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Update extracted medication
+  const updateExtractedMedication = (index: number, field: keyof ExtractedMedication, value: string) => {
+    setExtractedMedications(prev => 
+      prev.map((med, i) => 
+        i === index ? { ...med, [field]: value } : med
+      )
+    );
+  };
 
   // Take a photo with camera
   const takePicture = async () => {
@@ -62,8 +228,8 @@ export default function PrescriptionUpload({ onUploadComplete, onCancel, medicat
     }
   };
 
-  // Upload image to Supabase
-  const uploadPrescription = async () => {
+  // Upload image to Supabase (renamed from uploadPrescription)
+  const uploadPrescriptionImage = async () => {
     if (!capturedImage) {
       Alert.alert('Error', 'Please take a photo first');
       return;
@@ -80,19 +246,16 @@ export default function PrescriptionUpload({ onUploadComplete, onCancel, medicat
       const fileName = `prescription_${Date.now()}.jpg`;
       const filePath = `${user.id}/${fileName}`;
 
-      // Create FormData for React Native
-      const formData = new FormData();
-      formData.append('file', {
-        uri: capturedImage,
-        type: 'image/jpeg',
-        name: fileName,
-      } as any);
+      // Convert image to blob for React Native
+      const response = await fetch(capturedImage);
+      const blob = await response.blob();
 
       // Upload to Supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('files')
-        .upload(filePath, formData, {
+        .upload(filePath, blob, {
           contentType: 'image/jpeg',
+          upsert: false
         });
 
       if (uploadError) {
@@ -197,42 +360,151 @@ export default function PrescriptionUpload({ onUploadComplete, onCancel, medicat
               </TouchableOpacity>
             </View>
           </View>
+        ) : showExtractedMeds ? (
+          <ScrollView style={styles.reviewSection}>
+            <Text style={styles.reviewTitle}>Review Extracted Medications</Text>
+            <Text style={styles.reviewSubtitle}>
+              Please review and edit the information extracted from your prescription
+            </Text>
+            
+            {extractedMedications.map((med, index) => (
+              <View key={index} style={styles.medicationCard}>
+                <Text style={styles.medicationCardTitle}>Medication {index + 1}</Text>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Medication Name *</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={med.name}
+                    onChangeText={(value) => updateExtractedMedication(index, 'name', value)}
+                    placeholder="Enter medication name"
+                  />
+                </View>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Dosage</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={med.dosage}
+                    onChangeText={(value) => updateExtractedMedication(index, 'dosage', value)}
+                    placeholder="e.g., 10mg, 1 tablet"
+                  />
+                </View>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Frequency</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={med.frequency}
+                    onChangeText={(value) => updateExtractedMedication(index, 'frequency', value)}
+                    placeholder="e.g., Once daily, Twice a day"
+                  />
+                </View>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Prescribing Doctor</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={med.prescribing_doctor}
+                    onChangeText={(value) => updateExtractedMedication(index, 'prescribing_doctor', value)}
+                    placeholder="Doctor's name"
+                  />
+                </View>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Notes</Text>
+                  <TextInput
+                    style={[styles.textInput, styles.textArea]}
+                    value={med.notes}
+                    onChangeText={(value) => updateExtractedMedication(index, 'notes', value)}
+                    placeholder="Special instructions or notes"
+                    multiline
+                    numberOfLines={3}
+                  />
+                </View>
+              </View>
+            ))}
+            
+            <View style={styles.reviewActions}>
+              <TouchableOpacity 
+                style={styles.backToImageButton} 
+                onPress={() => setShowExtractedMeds(false)}
+              >
+                <Text style={styles.backToImageButtonText}>Back to Image</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.saveMedicationsButton, isUploading && styles.disabledButton]} 
+                onPress={saveExtractedMedications}
+                disabled={isUploading}
+              >
+                <Check size={20} color="#FFFFFF" />
+                <Text style={styles.saveMedicationsButtonText}>
+                  {isUploading ? 'Saving...' : 'Save Medications'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         ) : (
           <View style={styles.previewSection}>
             <Text style={styles.previewTitle}>Prescription Preview</Text>
             <Image source={{ uri: capturedImage }} style={styles.previewImage} />
             
-            {/* Medication Selection */}
-            <View style={styles.medicationSection}>
-              <Text style={styles.medicationLabel}>Link to Medication (Optional)</Text>
+            {/* AI Analysis Section */}
+            <View style={styles.aiSection}>
+              <Text style={styles.aiSectionTitle}>AI Analysis</Text>
+              <Text style={styles.aiSectionSubtitle}>
+                Let our AI extract medication information from your prescription
+              </Text>
+              
               <TouchableOpacity 
-                style={styles.medicationPicker}
-                onPress={() => setShowMedicationPicker(true)}
+                style={[styles.analyzeButton, isAnalyzing && styles.disabledButton]} 
+                onPress={analyzePrescription}
+                disabled={isAnalyzing}
               >
-                <Text style={styles.medicationButtonText}>
-                  {selectedMedication || 'Select a medication (optional)'}
+                <Brain size={24} color="#FFFFFF" />
+                <Text style={styles.analyzeButtonText}>
+                  {isAnalyzing ? 'Analyzing...' : 'Analyze with AI'}
                 </Text>
-                <ChevronDown size={20} color="#6B7280" />
               </TouchableOpacity>
             </View>
             
-            <View style={styles.actionButtons}>
-              <TouchableOpacity 
-                style={styles.retakeButton} 
-                onPress={() => setCapturedImage(null)}
-              >
-                <Text style={styles.retakeButtonText}>Retake</Text>
-              </TouchableOpacity>
+            {/* Manual Upload Section */}
+            <View style={styles.manualSection}>
+              <Text style={styles.manualSectionTitle}>Or Upload Manually</Text>
               
-              <TouchableOpacity 
-                style={[styles.uploadButton, isUploading && styles.disabledButton]} 
-                onPress={uploadPrescription}
-                disabled={isUploading}
-              >
-                <Text style={styles.uploadButtonText}>
-                  {isUploading ? 'Uploading...' : 'Upload'}
-                </Text>
-              </TouchableOpacity>
+              {/* Medication Selection */}
+              <View style={styles.medicationSection}>
+                <Text style={styles.medicationLabel}>Link to Existing Medication (Optional)</Text>
+                <TouchableOpacity 
+                  style={styles.medicationPicker}
+                  onPress={() => setShowMedicationPicker(true)}
+                >
+                  <Text style={styles.medicationButtonText}>
+                    {selectedMedication || 'Select a medication (optional)'}
+                  </Text>
+                  <ChevronDown size={20} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.actionButtons}>
+                <TouchableOpacity 
+                  style={styles.retakeButton} 
+                  onPress={() => setCapturedImage(null)}
+                >
+                  <Text style={styles.retakeButtonText}>Retake</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.uploadButton, isUploading && styles.disabledButton]} 
+                  onPress={uploadPrescriptionImage}
+                  disabled={isUploading}
+                >
+                  <Text style={styles.uploadButtonText}>
+                    {isUploading ? 'Uploading...' : 'Upload Only'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         )}
@@ -565,5 +837,128 @@ const styles = StyleSheet.create({
   medicationOptionTextSelected: {
     fontWeight: 'bold',
     color: 'white',
+  },
+  reviewSection: {
+    flex: 1,
+  },
+  reviewTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1E40AF',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  reviewSubtitle: {
+    fontSize: 16,
+    color: '#374151',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  medicationCard: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  medicationCardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1E40AF',
+    marginBottom: 16,
+  },
+  inputGroup: {
+    marginBottom: 12,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+  },
+  textArea: {
+    height: 100,
+  },
+  reviewActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  backToImageButton: {
+    flex: 1,
+    marginRight: 8,
+    padding: 15,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+  },
+  backToImageButtonText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  saveMedicationsButton: {
+    flex: 1,
+    marginLeft: 8,
+    backgroundColor: '#10B981',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  saveMedicationsButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  aiSection: {
+    marginBottom: 20,
+  },
+  aiSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1E40AF',
+    marginBottom: 8,
+  },
+  aiSectionSubtitle: {
+    fontSize: 14,
+    color: '#374151',
+    marginBottom: 16,
+  },
+  analyzeButton: {
+    backgroundColor: '#3B82F6',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  analyzeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  manualSection: {
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 20,
+  },
+  manualSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1E40AF',
+    marginBottom: 16,
+    textAlign: 'center',
   },
 }); 

@@ -10,6 +10,7 @@ import { supabase, getCurrentUser, getUserProfile, getUserMedications, getUserAp
 import ConvAiDOMComponent from './components/ConvAI';
 import tools from './utils/tools';
 import { Platform } from 'react-native';
+import { ZoomProvider } from './contexts/ZoomContext';
 
 export default function App() {
   const [session, setSession] = useState<boolean>(false);
@@ -84,6 +85,58 @@ export default function App() {
     setShowUserData(true);
   };
 
+  return (
+    <ZoomProvider>
+      <AppContent 
+        session={session}
+        loading={loading}
+        error={error}
+        showUserData={showUserData}
+        showSection={showSection}
+        handleAuthenticated={handleAuthenticated}
+        handleSignOut={handleSignOut}
+        handleViewUserData={handleViewUserData}
+        setError={setError}
+        setLoading={setLoading}
+        setSession={setSession}
+        setShowUserData={setShowUserData}
+        setShowSection={setShowSection}
+      />
+    </ZoomProvider>
+  );
+}
+
+interface AppContentProps {
+  session: boolean;
+  loading: boolean;
+  error: string | null;
+  showUserData: boolean;
+  showSection: 'appointments' | 'medications' | 'profile' | null;
+  handleAuthenticated: () => void;
+  handleSignOut: () => void;
+  handleViewUserData: (section: 'appointments' | 'medications' | 'profile') => void;
+  setError: (error: string | null) => void;
+  setLoading: (loading: boolean) => void;
+  setSession: (session: boolean) => void;
+  setShowUserData: (show: boolean) => void;
+  setShowSection: (section: 'appointments' | 'medications' | 'profile' | null) => void;
+}
+
+function AppContent({ 
+  session, 
+  loading, 
+  error, 
+  showUserData, 
+  showSection, 
+  handleAuthenticated, 
+  handleSignOut, 
+  handleViewUserData,
+  setError,
+  setLoading,
+  setSession,
+  setShowUserData,
+  setShowSection
+}: AppContentProps) {
   // If there's an error, display it
   if (error) {
     return (

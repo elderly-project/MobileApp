@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 
 import tools from '../utils/tools';
 import { getCurrentUser, getUserProfile, getUserMedications, getUserAppointments } from '../utils/supabase';
+import { supabase } from '../utils/supabase';
 
 async function requestMicrophonePermission() {
   try {
@@ -184,6 +185,52 @@ export default function ConvAiDOMComponent({
     return vars;
   };
 
+  // Add medication client tool function
+  const add_medication = async (parameters: {
+    name: string;
+    dosage: string;
+    frequency: string;
+    prescribing_doctor: string;
+  }): Promise<string> => {
+    try {
+      console.log('Adding medication via voice assistant:', parameters);
+      
+      // Get current user
+      const user = await getCurrentUser();
+      if (!user) {
+        console.error('User not authenticated');
+        return 'Error: User not authenticated';
+      }
+
+      // Insert medication into database
+      const { data, error } = await supabase.from('medications').insert({
+        user_id: user.id,
+        name: parameters.name,
+        dosage: parameters.dosage,
+        frequency: parameters.frequency,
+        prescribing_doctor: parameters.prescribing_doctor || null,
+        start_date: new Date().toISOString().split('T')[0], // Today's date
+        notes: 'Added via voice assistant'
+      });
+
+      if (error) {
+        console.error('Error adding medication:', error);
+        return `Error adding medication: ${error.message}`;
+      }
+
+      console.log('Medication added successfully:', data);
+      
+      // Provide haptic feedback for success
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      return `Successfully added ${parameters.name} to your medication list.`;
+      
+    } catch (error) {
+      console.error('Error in add_medication tool:', error);
+      return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    }
+  };
+
   const startConversation = useCallback(async () => {
     try {
       // Request microphone permission
@@ -214,12 +261,13 @@ export default function ConvAiDOMComponent({
 
       // Start the conversation with your agent (using same agent ID as web app)
       await conversation.startSession({
-        agentId: process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID || 'mW5EqEQKH3n04CZsF8Ds',
+        agentId: process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID || 'jLSB7HZsBTIplQpFOU29',
         dynamicVariables: dynamicVariables,
         clientTools: {
           get_battery_level,
           change_brightness,
           flash_screen,
+          add_medication,
         },
       });
     } catch (error) {

@@ -4,6 +4,8 @@ import { supabase, getCurrentUser, getUserProfile, getUserMedications, getUserAp
 import AddAppointment from './AddAppointment';
 import PrescriptionUpload from './PrescriptionUpload';
 import EditProfile from './EditProfile';
+import ZoomControls from './ZoomControls';
+import { useZoom } from '../contexts/ZoomContext';
 
 interface UserDataProps {
   onSignOut?: () => void;
@@ -11,6 +13,7 @@ interface UserDataProps {
 }
 
 export default function UserData({ onSignOut, show }: UserDataProps) {
+  const { getScaledSize, getScaledPadding } = useZoom();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showAddAppointment, setShowAddAppointment] = useState(false);
@@ -109,7 +112,7 @@ export default function UserData({ onSignOut, show }: UserDataProps) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3B82F6" />
-        <Text style={styles.loadingText}>Loading your health data...</Text>
+        <Text style={[styles.loadingText, { fontSize: getScaledSize(16) }]}>Loading your health data...</Text>
       </View>
     );
   }
@@ -174,118 +177,138 @@ export default function UserData({ onSignOut, show }: UserDataProps) {
         />
       }
     >
-      <View style={styles.header}>
-        <Text style={styles.welcomeText}>
+      <View style={[styles.header, { padding: getScaledPadding(16) }]}>
+        <Text style={[styles.welcomeText, { fontSize: getScaledSize(18) }]}>
           Welcome, {userData.profile?.full_name || 'User'}
         </Text>
         {show === 'profile' && onSignOut && (
-          <TouchableOpacity onPress={onSignOut} style={styles.signOutButton}>
-            <Text style={styles.signOutButtonText}>Sign Out</Text>
+          <TouchableOpacity onPress={onSignOut} style={[styles.signOutButton, { padding: getScaledPadding(8) }]}>
+            <Text style={[styles.signOutButtonText, { fontSize: getScaledSize(14) }]}>Sign Out</Text>
           </TouchableOpacity>
         )}
       </View>
 
-
+      {/* Add Zoom Controls to Profile Section */}
       {(!show || show == 'profile') && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Profile Information</Text>
-            <TouchableOpacity 
-              style={styles.editButton}
-              onPress={() => {
-                console.log('Edit Profile button pressed!');
-                setShowEditProfile(true);
-              }}
-            >
-              <Text style={styles.editButtonText}>✏️ Edit</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.profileItem}>
-            <Text style={styles.profileLabel}>Name:</Text>
-            <Text style={styles.profileValue}>{userData.profile?.full_name || 'Not specified'}</Text>
-          </View>
-          {userData.profile?.date_of_birth && (
-            <View style={styles.profileItem}>
-              <Text style={styles.profileLabel}>Date of Birth:</Text>
-              <Text style={styles.profileValue}>{formatDate(userData.profile.date_of_birth)}</Text>
+        <>
+          <ZoomControls style={{ margin: getScaledPadding(16), marginBottom: getScaledPadding(8) }} />
+          
+          <View style={[styles.section, { margin: getScaledPadding(16), marginTop: getScaledPadding(8), padding: getScaledPadding(16) }]}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { fontSize: getScaledSize(18) }]}>Profile Information</Text>
+              <TouchableOpacity 
+                style={[styles.editButton, { padding: getScaledPadding(12), paddingHorizontal: getScaledPadding(16) }]}
+                onPress={() => {
+                  console.log('Edit Profile button pressed!');
+                  setShowEditProfile(true);
+                }}
+              >
+                <Text style={[styles.editButtonText, { fontSize: getScaledSize(14) }]}>✏️ Edit</Text>
+              </TouchableOpacity>
             </View>
-          )}
-          {userData.profile?.phone_number && (
-            <View style={styles.profileItem}>
-              <Text style={styles.profileLabel}>Phone:</Text>
-              <Text style={styles.profileValue}>{userData.profile.phone_number}</Text>
+            <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
+              <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Name:</Text>
+              <Text style={[styles.profileValue, { fontSize: getScaledSize(14) }]}>{userData.profile?.full_name || 'Not specified'}</Text>
             </View>
-          )}
-          {userData.profile?.emergency_contact && (
-            <View style={styles.profileItem}>
-              <Text style={styles.profileLabel}>Emergency Contact:</Text>
-              <Text style={styles.profileValue}>{userData.profile.emergency_contact}</Text>
-            </View>
-          )}
-          {userData.profile?.emergency_contact_phone && (
-            <View style={styles.profileItem}>
-              <Text style={styles.profileLabel}>Emergency Phone:</Text>
-              <Text style={styles.profileValue}>{userData.profile.emergency_contact_phone}</Text>
-            </View>
-          )}
-          {userData.profile?.medical_conditions?.length > 0 && (
-            <View style={styles.profileItem}>
-              <Text style={styles.profileLabel}>Medical Conditions:</Text>
-              <View>
-                {userData.profile.medical_conditions.map((condition: string, index: number) => (
-                  <Text key={index} style={styles.listItem}>• {condition}</Text>
-                ))}
+            {userData.profile?.date_of_birth && (
+              <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
+                <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Date of Birth:</Text>
+                <Text style={[styles.profileValue, { fontSize: getScaledSize(14) }]}>{formatDate(userData.profile.date_of_birth)}</Text>
               </View>
-            </View>
-          )}
-          {userData.profile?.allergies?.length > 0 && (
-            <View style={styles.profileItem}>
-              <Text style={styles.profileLabel}>Allergies:</Text>
-              <View>
-                {userData.profile.allergies.map((allergy: string, index: number) => (
-                  <Text key={index} style={styles.listItem}>• {allergy}</Text>
-                ))}
+            )}
+            {userData.profile?.phone_number && (
+              <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
+                <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Phone:</Text>
+                <Text style={[styles.profileValue, { fontSize: getScaledSize(14) }]}>{userData.profile.phone_number}</Text>
               </View>
-            </View>
-          )}
-        </View>
+            )}
+            {userData.profile?.emergency_contact && (
+              <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
+                <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Emergency Contact:</Text>
+                <Text style={[styles.profileValue, { fontSize: getScaledSize(14) }]}>{userData.profile.emergency_contact}</Text>
+              </View>
+            )}
+            {userData.profile?.emergency_contact_phone && (
+              <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
+                <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Emergency Phone:</Text>
+                <Text style={[styles.profileValue, { fontSize: getScaledSize(14) }]}>{userData.profile.emergency_contact_phone}</Text>
+              </View>
+            )}
+            {userData.profile?.medical_conditions?.length > 0 && (
+              <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
+                <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Medical Conditions:</Text>
+                <View>
+                  {userData.profile.medical_conditions.map((condition: string, index: number) => (
+                    <Text key={index} style={[styles.listItem, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>• {condition}</Text>
+                  ))}
+                </View>
+              </View>
+            )}
+            {userData.profile?.allergies?.length > 0 && (
+              <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
+                <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Allergies:</Text>
+                <View>
+                  {userData.profile.allergies.map((allergy: string, index: number) => (
+                    <Text key={index} style={[styles.listItem, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>• {allergy}</Text>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+        </>
       )}
 
 
       {(!show || show === 'medications') && (
-        <View style={styles.section}>
+        <View style={[styles.section, { margin: getScaledPadding(16), marginBottom: getScaledPadding(8), padding: getScaledPadding(16) }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Medications</Text>
-            <TouchableOpacity 
-              style={styles.addButton}
-              onPress={() => {
-                console.log('Upload Prescription button pressed!');
-                setShowPrescriptionUpload(true);
-              }}
-            >
-              <Text style={styles.addButtonText}>📷 Upload Prescription</Text>
-            </TouchableOpacity>
+            <Text style={[styles.sectionTitle, { fontSize: getScaledSize(18) }]}>Medications</Text>
+            <View style={styles.buttonGroup}>
+              <TouchableOpacity 
+                style={[styles.analyzeButton, { padding: getScaledPadding(12), paddingHorizontal: getScaledPadding(16), marginRight: getScaledPadding(8) }]}
+                onPress={() => {
+                  console.log('Analyze Prescription button pressed!');
+                  setShowPrescriptionUpload(true);
+                }}
+              >
+                <Text style={[styles.analyzeButtonText, { fontSize: getScaledSize(14) }]}>🧠 Analyze Prescription</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.addButton, { padding: getScaledPadding(12), paddingHorizontal: getScaledPadding(16) }]}
+                onPress={() => {
+                  console.log('Upload Prescription button pressed!');
+                  setShowPrescriptionUpload(true);
+                }}
+              >
+                <Text style={[styles.addButtonText, { fontSize: getScaledSize(14) }]}>📷 Upload</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           {userData.medications.length === 0 ? (
-            <Text style={styles.emptyMessage}>No medications found.</Text>
+            <View style={[styles.emptyStateContainer, { padding: getScaledPadding(16) }]}>
+              <Text style={[styles.emptyMessage, { fontSize: getScaledSize(14), padding: getScaledPadding(12) }]}>No medications found.</Text>
+              <Text style={[styles.emptySubMessage, { fontSize: getScaledSize(14), padding: getScaledPadding(12) }]}>
+                Take a photo of your prescription and let AI extract the medication information automatically!
+              </Text>
+            </View>
           ) : (
             userData.medications.map((medication) => (
-              <View key={medication.id} style={styles.card}>
-                <Text style={styles.cardTitle}>{medication.name}</Text>
-                <View style={styles.cardContent}>
-                  <Text style={styles.cardDetail}>Dosage: {medication.dosage}</Text>
-                  <Text style={styles.cardDetail}>Frequency: {medication.frequency}</Text>
+              <View key={medication.id} style={[styles.card, { marginBottom: getScaledPadding(12), padding: getScaledPadding(12) }]}>
+                <Text style={[styles.cardTitle, { fontSize: getScaledSize(16), marginBottom: getScaledPadding(8) }]}>{medication.name}</Text>
+                <View style={[styles.cardContent, { paddingLeft: getScaledPadding(8) }]}>
+                  <Text style={[styles.cardDetail, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>Dosage: {medication.dosage}</Text>
+                  <Text style={[styles.cardDetail, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>Frequency: {medication.frequency}</Text>
                   {medication.start_date && (
-                    <Text style={styles.cardDetail}>Start Date: {formatDate(medication.start_date)}</Text>
+                    <Text style={[styles.cardDetail, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>Start Date: {formatDate(medication.start_date)}</Text>
                   )}
                   {medication.end_date && (
-                    <Text style={styles.cardDetail}>End Date: {formatDate(medication.end_date)}</Text>
+                    <Text style={[styles.cardDetail, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>End Date: {formatDate(medication.end_date)}</Text>
                   )}
                   {medication.prescribing_doctor && (
-                    <Text style={styles.cardDetail}>Doctor: {medication.prescribing_doctor}</Text>
+                    <Text style={[styles.cardDetail, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>Doctor: {medication.prescribing_doctor}</Text>
                   )}
                   {medication.notes && (
-                    <Text style={styles.cardDetail}>Notes: {medication.notes}</Text>
+                    <Text style={[styles.cardDetail, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>Notes: {medication.notes}</Text>
                   )}
                 </View>
               </View>
@@ -295,40 +318,40 @@ export default function UserData({ onSignOut, show }: UserDataProps) {
       )}
 
       {(!show || show === 'appointments') && (
-        <View style={styles.section}>
+        <View style={[styles.section, { margin: getScaledPadding(16), marginBottom: getScaledPadding(8), padding: getScaledPadding(16) }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Upcoming Appointments</Text>
+            <Text style={[styles.sectionTitle, { fontSize: getScaledSize(18) }]}>Upcoming Appointments</Text>
             <TouchableOpacity 
-              style={styles.addButton}
+              style={[styles.addButton, { padding: getScaledPadding(12), paddingHorizontal: getScaledPadding(16) }]}
               onPress={() => {
                 console.log('Schedule button pressed!');
                 setShowAddAppointment(true);
               }}
             >
-              <Text style={styles.addButtonText}>+ Schedule</Text>
+              <Text style={[styles.addButtonText, { fontSize: getScaledSize(14) }]}>+ Schedule</Text>
             </TouchableOpacity>
           </View>
           {userData.appointments.length === 0 ? (
-            <Text style={styles.emptyMessage}>No appointments scheduled.</Text>
+            <Text style={[styles.emptyMessage, { fontSize: getScaledSize(14), padding: getScaledPadding(12) }]}>No appointments scheduled.</Text>
           ) : (
             userData.appointments.map((appointment) => (
-              <View key={appointment.id} style={styles.card}>
-                <Text style={styles.cardTitle}>{appointment.title}</Text>
-                <View style={styles.cardContent}>
-                  <Text style={styles.cardDetail}>
+              <View key={appointment.id} style={[styles.card, { marginBottom: getScaledPadding(12), padding: getScaledPadding(12) }]}>
+                <Text style={[styles.cardTitle, { fontSize: getScaledSize(16), marginBottom: getScaledPadding(8) }]}>{appointment.title}</Text>
+                <View style={[styles.cardContent, { paddingLeft: getScaledPadding(8) }]}>
+                  <Text style={[styles.cardDetail, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>
                     Date: {formatDate(appointment.appointment_date)}
                   </Text>
-                  <Text style={styles.cardDetail}>
+                  <Text style={[styles.cardDetail, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>
                     Time: {formatTime(appointment.appointment_date)}
                   </Text>
                   {appointment.doctor_name && (
-                    <Text style={styles.cardDetail}>Doctor: {appointment.doctor_name}</Text>
+                    <Text style={[styles.cardDetail, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>Doctor: {appointment.doctor_name}</Text>
                   )}
                   {appointment.location && (
-                    <Text style={styles.cardDetail}>Location: {appointment.location}</Text>
+                    <Text style={[styles.cardDetail, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>Location: {appointment.location}</Text>
                   )}
                   {appointment.notes && (
-                    <Text style={styles.cardDetail}>Notes: {appointment.notes}</Text>
+                    <Text style={[styles.cardDetail, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>Notes: {appointment.notes}</Text>
                   )}
                 </View>
               </View>
@@ -493,5 +516,36 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  analyzeButton: {
+    padding: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#3B82F6',
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  analyzeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  emptySubMessage: {
+    color: '#6B7280',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    padding: 12,
   },
 }); 
