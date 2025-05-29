@@ -205,7 +205,7 @@ export default function UserData({ onSignOut, show }: UserDataProps) {
               >
                 <Text style={[styles.editButtonText, { fontSize: getScaledSize(14) }]}>✏️ Edit</Text>
               </TouchableOpacity>
-            </View>
+          </View>
             <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
               <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Name:</Text>
               <Text style={[styles.profileValue, { fontSize: getScaledSize(14) }]}>{userData.profile?.full_name || 'Not specified'}</Text>
@@ -214,9 +214,9 @@ export default function UserData({ onSignOut, show }: UserDataProps) {
               <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
                 <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Date of Birth:</Text>
                 <Text style={[styles.profileValue, { fontSize: getScaledSize(14) }]}>{formatDate(userData.profile.date_of_birth)}</Text>
-              </View>
-            )}
-            {userData.profile?.phone_number && (
+            </View>
+          )}
+          {userData.profile?.phone_number && (
               <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
                 <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Phone:</Text>
                 <Text style={[styles.profileValue, { fontSize: getScaledSize(14) }]}>{userData.profile.phone_number}</Text>
@@ -232,29 +232,29 @@ export default function UserData({ onSignOut, show }: UserDataProps) {
               <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
                 <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Emergency Phone:</Text>
                 <Text style={[styles.profileValue, { fontSize: getScaledSize(14) }]}>{userData.profile.emergency_contact_phone}</Text>
-              </View>
-            )}
-            {userData.profile?.medical_conditions?.length > 0 && (
+            </View>
+          )}
+          {userData.profile?.medical_conditions?.length > 0 && (
               <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
                 <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Medical Conditions:</Text>
-                <View>
-                  {userData.profile.medical_conditions.map((condition: string, index: number) => (
+              <View>
+                {userData.profile.medical_conditions.map((condition: string, index: number) => (
                     <Text key={index} style={[styles.listItem, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>• {condition}</Text>
-                  ))}
-                </View>
+                ))}
               </View>
-            )}
-            {userData.profile?.allergies?.length > 0 && (
+            </View>
+          )}
+          {userData.profile?.allergies?.length > 0 && (
               <View style={[styles.profileItem, { marginBottom: getScaledPadding(8) }]}>
                 <Text style={[styles.profileLabel, { fontSize: getScaledSize(14) }]}>Allergies:</Text>
-                <View>
-                  {userData.profile.allergies.map((allergy: string, index: number) => (
+              <View>
+                {userData.profile.allergies.map((allergy: string, index: number) => (
                     <Text key={index} style={[styles.listItem, { fontSize: getScaledSize(14), marginBottom: getScaledPadding(4) }]}>• {allergy}</Text>
-                  ))}
-                </View>
+                ))}
               </View>
-            )}
-          </View>
+            </View>
+          )}
+        </View>
         </>
       )}
 
