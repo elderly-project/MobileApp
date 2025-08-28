@@ -49,7 +49,7 @@ export default function SimplestApp({ onSignOut, onViewUserData }: SimplestAppPr
             <Text style={styles.helpExample}>"What's my schedule today?"</Text>
             <Text style={styles.helpExample}>"Remind me about my medicine"</Text>
           </View>
-          
+          <View style={styles.micButtonWrapper}>
           <ConvAiDOMComponent
             dom={{ style: styles.domComponent }}
             platform={Platform.OS}
@@ -57,6 +57,7 @@ export default function SimplestApp({ onSignOut, onViewUserData }: SimplestAppPr
             change_brightness={tools.change_brightness}
             flash_screen={tools.flash_screen}
           />
+          </View>
         </View>
       </View>
     </View>
@@ -113,6 +114,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 20,
+  },
+  micButtonWrapper: {
+    overflow: 'hidden',
+    borderRadius: 60, // half of width/height for perfect circle
+    width: 120,
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   assistantContainer: {
     backgroundColor: 'white',
